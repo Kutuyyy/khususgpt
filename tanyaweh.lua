@@ -40,6 +40,244 @@ end
 ------------------------------------------------------
 local state = {}
 
+
+------------------------------------------------------
+-- REMOTES
+------------------------------------------------------
+state.ReplicatorEvent = ReplicatedStorage.__ReplicatorInternal and ReplicatedStorage.__ReplicatorInternal.RemoteEvent
+state.PlotAction = ReplicatedStorage.Packages and ReplicatedStorage.Packages.Net and ReplicatedStorage.Packages.Net["RF/Plot.PlotAction"]
+state.UpgradeSpeed = ReplicatedStorage.RemoteFunctions and ReplicatedStorage.RemoteFunctions.UpgradeSpeed
+state.Rebirth = ReplicatedStorage.RemoteFunctions and ReplicatedStorage.RemoteFunctions.Rebirth
+state.UpgradeCarry = ReplicatedStorage.RemoteFunctions and ReplicatedStorage.RemoteFunctions.UpgradeCarry
+state.WheelSpinRoll = ReplicatedStorage.Packages and ReplicatedStorage.Packages.Net and ReplicatedStorage.Packages.Net["RF/WheelSpin.Roll"]
+state.WheelSpinComplete = ReplicatedStorage.Packages and ReplicatedStorage.Packages.Net and ReplicatedStorage.Packages.Net["RE/WheelSpin.Complete"]
+
+------------------------------------------------------
+-- FLAGS & STATE (dipindah ke state)
+------------------------------------------------------
+-- MAPS Valentines
+state.candyDepositInProgress = false
+state.candyDepositListener = nil
+state.candyGramStationPos = nil
+
+-- automation toggles
+state.AutoCollect = false
+state.AutoUpgrade = false
+state.AutoCollectGoldBar = false
+state.AutoBuySpeed = false
+state.AutoRebirth = false
+state.AutoBuyCarry = false
+state.AutoCollectRadioactive = false
+state.AutoCollectUFO = false
+state.AutoSpinRadioactive = false
+state.AutoSpinUFO = false
+state.AutoSpinGoldBar = false
+state.AutoCollectValentine = false
+
+-- misc features
+state.InstantGrabEnabled = false
+state.InfiniteZoomEnabled = false
+state.InfiniteJumpEnabled = false
+
+-- NEW
+state.BypassVIP = false
+state.NoClipEnabled = false
+
+state.SelectiveNoClipEnabled = false
+state.vipNoClipConn = nil
+state.NoClipEnabled = false
+state.noClipConn = nil
+state.vipTouchBlockConn = nil
+state.vipTouchBlockConn = state.vipTouchBlockConn  -- (dummy, cukup untuk deklarasi)
+
+state.AutoRunEnabled = false
+state.TargetGapIndex = 1
+
+state.infiniteJumpConn = nil
+state.promptConn = nil
+state.promptOriginalHold = {}
+
+-- plots / uuids
+state.Plots = {}
+state.ActiveUUIDs = {}
+state.UUIDSnapshotDone = false
+state.isMovingGap = false
+
+-- platform builder
+state.isTweening = false
+state.platformEnabled = false
+
+state.autoMoveEnabled = false
+state.autoMoveTask = nil
+
+state.autoCollectEnabled = false
+state.autoCollectTask = nil
+
+-- ui/shared selection
+state.selectedFloorIndex = 1
+
+-- brainrot settings
+state.BRAINROT_PICK_COUNT = 1
+
+-- lucky block auto collect state
+state.autoCollectBlockEnabled = false
+state.autoCollectBlockTask = nil
+state.LuckyBlockTargets = {}   -- set table
+state.pendingRestartCollectRarity = false
+state.selectedRarities = {}
+state.pendingRestartCollectBlock = false
+state.brainrotCache = {}
+state.BRAINROT_PRIORITY_ORDER = {
+    "Infinity","Divine","Celestial","Secret","Cosmic","Mythical","Legendary","Epic","Rare","Uncommon","Common"
+}
+state.RARITIES = {
+    "Infinity","Divine","Celestial","Secret","Cosmic","Mythical","Legendary","Epic","Rare","Uncommon","Common"
+}
+
+state.DEBUG_LUCKY = false
+state.LUCKY_RETRY_DELAY = 0.6     -- detik antar attempt
+state.LUCKY_MAX_ATTEMPTS = 6      -- retry sebelum reset
+
+-- Lucky block watcher
+state.LuckyBlockQueue = {}
+state.LuckyBlockSeen = {}
+state.luckyWatcherConnAdded = nil
+state.luckyWatcherConnRemoved = nil
+state.workspaceChildAddedConn = nil
+state.promptOriginalHold_PB = {}
+state.LUCKY_PRIORITY_ORDER = {
+    "Admin","Divine","Celestial","Gamer","Radioactive","Void","UFO","Alien","Jackpot","Money",
+    "Secret","Cosmic","Mythical","Legendary","Epic","Rare","Uncommon","Common"
+}
+state.RemoteEventsFolder = nil
+
+state.LUCKY_PRIORITY_MAP = {}
+for i, name in ipairs(state.LUCKY_PRIORITY_ORDER) do
+    state.LUCKY_PRIORITY_MAP[name] = i
+end
+
+-- floors data
+state.Floors = {
+    {name="Start",      x=119.389}, -- index 1
+    {name="Common",     x=242},
+    {name="Uncommon",   x=341},
+    {name="Rare",       x=470},
+    {name="Epic",       x=649},
+    {name="Legendary",  x=913},
+    {name="Mythical",   x=1310},
+    {name="Cosmic",     x=1900},
+    {name="Secret",     x=2430},
+    {name="Celestial",  x=2785},
+}
+
+-- tween / respawn
+state.lastTween = nil
+state.pendingRestartMove = false
+state.pendingRestartCollect = false
+state.humanoidDiedConn = nil
+
+state.scannerEnabled = false
+state.scannerTask = nil
+
+state.platformBooting = false
+state.hardResetOnRespawn = false
+
+-- platform builder internal parts
+state.platformParts = {}
+state.wallParts = {}
+
+state.OpenBlockState = { chosenTypes = {} }
+state.AutoCollectArcade = false
+
+state.coinCache = {
+    ["Radioactive Coin"] = {},
+    ["UFO Coin"] = {},
+    ["GoldBar"] = {},
+    ["Ticket"] = {},
+    ["Game Console"] = {},
+    -- Valentine / Event
+    ["HeartCandy1"] = {},
+    ["HeartCandy2"] = {},
+    ["HeartCandy3"] = {},
+    ["lovetoken"] = {}
+}
+state.cachePointers = {
+    ["Radioactive Coin"] = 1,
+    ["UFO Coin"] = 1,
+    ["GoldBar"] = 1,
+    ["Ticket"] = 1,
+    ["Game Console"] = 1,
+    -- Valentine pointers
+    ["HeartCandy1"] = 1,
+    ["HeartCandy2"] = 1,
+    ["HeartCandy3"] = 1,
+    ["lovetoken"] = 1
+}
+
+-- Collect Coins (new unified dropdown)
+state.CollectCoins = state.CollectCoins or {
+    ["Radioactive Coin"] = false,
+    ["UFO Coin"] = false,
+    ["Gold Bar"] = false,
+    ["Arcade"] = false,
+    ["Valentine"] = false
+}
+state.ActivateCollectCoin = state.ActivateCollectCoin or false
+
+-- obby gold
+state.AutoObbyGoldEnabled = false
+state.obbyGoldTask = nil
+state.OBBY_TARGETS = {
+    "MoneyObby1End",
+    "MoneyObby2End",
+    "MoneyObby3End"
+}
+state.obbyPartCache = {}
+state.isRunningObbySequence = false
+state.obbyCurrentStep = 0
+
+state.OBBY_PAIRS = {
+    {start = "MoneyObbyStart1", finish = "MoneyObby1End"},
+    {start = "MoneyObbyStart2", finish = "MoneyObby2End"},
+    {start = "MoneyObbyStart3", finish = "MoneyObby3End"}
+}
+
+state.AutoCollectTarget = false
+state.autoCollectTargetTask = nil
+state.vipWallListenerConn = nil
+
+-- Auto Trade / Auto Gift state (diperlukan untuk fitur dari script2)
+state.TargetPlayer = nil
+state.BrainrotSet = {}         -- map rarity -> true (selections for giving/trading)
+state.LuckySet = {}           -- map rarity -> true (selections for lucky blocks)
+
+state.AutoGift = false
+state.AutoGiftTask = nil
+
+state.AutoTrade = false
+state.AutoTradeTask = nil
+
+-- timing / slot configs (default values sesuai script2)
+state.MAX_SLOTS = 6
+state.SEND_TRADE_WAIT = 5.0   -- waktu tunggu setelah SendTrade sebelum mulai fill slots
+state.POST_FILL_WAIT = 4.0    -- waktu tunggu setelah fill slots sebelum tekan Accept
+state.POST_ACCEPT_WAIT = 5.0  -- waktu tunggu setelah tekan Accept sebelum loop berikutnya
+state.LOOP_DELAY = 2.0        -- delay tambahan di loop (tetap ada)
+
+-- remotes placeholders (akan di-init di Block B)
+state.SendGiftRF = nil
+state.SendTradeRF = nil
+state.SetSlotOfferRF = nil
+state.ReadyTradeRE = nil
+state.AutoTravelEnabled = false
+state.autoTravelTask = nil
+state.pendingRestartTravel = false
+
+state._autoTravelPaused = false
+state._autoTravelPausedByCollector = false
+state.CollectMethod = state.CollectMethod or "V2" -- "V1" = old safe-area method, "V2" = new per-target path (your new method)
+
+
 ------------------------------------------------------
 -- LOAD WINDUI
 ------------------------------------------------------
@@ -332,7 +570,7 @@ local SAVABLE_KEYS = {
     "platformEnabled","AUTO_MOVE_SPEED_MULT","BRAINROT_PICK_COUNT",
     "selectedRarities","LuckyBlockTargets","TWEEN_SPEED","WALL_SAFE_DISTANCE",
     "MAX_SLOTS","SEND_TRADE_WAIT","POST_FILL_WAIT","LOOP_DELAY",
-    "AutoTravelEnabled",
+    "AutoTravelEnabled","CollectMethod",
     -- tambahan agar toggle / UI lain terpersist:
     "BypassVIP","NoClipEnabled","AutoObbyGoldEnabled"
 }
@@ -747,244 +985,6 @@ local function deleteConfigOnline(optUserId, slotName)
 end
 
 
--- compatibility: button callbacks call without args
--- adjust existing UI buttons to call saveConfigOnline() / loadConfigOnline()
-
-
-------------------------------------------------------
--- REMOTES
-------------------------------------------------------
-state.ReplicatorEvent = ReplicatedStorage.__ReplicatorInternal and ReplicatedStorage.__ReplicatorInternal.RemoteEvent
-state.PlotAction = ReplicatedStorage.Packages and ReplicatedStorage.Packages.Net and ReplicatedStorage.Packages.Net["RF/Plot.PlotAction"]
-state.UpgradeSpeed = ReplicatedStorage.RemoteFunctions and ReplicatedStorage.RemoteFunctions.UpgradeSpeed
-state.Rebirth = ReplicatedStorage.RemoteFunctions and ReplicatedStorage.RemoteFunctions.Rebirth
-state.UpgradeCarry = ReplicatedStorage.RemoteFunctions and ReplicatedStorage.RemoteFunctions.UpgradeCarry
-state.WheelSpinRoll = ReplicatedStorage.Packages and ReplicatedStorage.Packages.Net and ReplicatedStorage.Packages.Net["RF/WheelSpin.Roll"]
-state.WheelSpinComplete = ReplicatedStorage.Packages and ReplicatedStorage.Packages.Net and ReplicatedStorage.Packages.Net["RE/WheelSpin.Complete"]
-
-------------------------------------------------------
--- FLAGS & STATE (dipindah ke state)
-------------------------------------------------------
--- MAPS Valentines
-state.candyDepositInProgress = false
-state.candyDepositListener = nil
-state.candyGramStationPos = nil
-
--- automation toggles
-state.AutoCollect = false
-state.AutoUpgrade = false
-state.AutoCollectGoldBar = false
-state.AutoBuySpeed = false
-state.AutoRebirth = false
-state.AutoBuyCarry = false
-state.AutoCollectRadioactive = false
-state.AutoCollectUFO = false
-state.AutoSpinRadioactive = false
-state.AutoSpinUFO = false
-state.AutoSpinGoldBar = false
-state.AutoCollectValentine = false
-
--- misc features
-state.InstantGrabEnabled = false
-state.InfiniteZoomEnabled = false
-state.InfiniteJumpEnabled = false
-
--- NEW
-state.BypassVIP = false
-state.NoClipEnabled = false
-
-state.SelectiveNoClipEnabled = false
-state.vipNoClipConn = nil
-state.NoClipEnabled = false
-state.noClipConn = nil
-state.vipTouchBlockConn = nil
-state.vipTouchBlockConn = state.vipTouchBlockConn  -- (dummy, cukup untuk deklarasi)
-
-state.AutoRunEnabled = false
-state.TargetGapIndex = 1
-
-state.infiniteJumpConn = nil
-state.promptConn = nil
-state.promptOriginalHold = {}
-
--- plots / uuids
-state.Plots = {}
-state.ActiveUUIDs = {}
-state.UUIDSnapshotDone = false
-state.isMovingGap = false
-
--- platform builder
-state.isTweening = false
-state.platformEnabled = false
-
-state.autoMoveEnabled = false
-state.autoMoveTask = nil
-
-state.autoCollectEnabled = false
-state.autoCollectTask = nil
-
--- ui/shared selection
-state.selectedFloorIndex = 1
-
--- brainrot settings
-state.BRAINROT_PICK_COUNT = 1
-
--- lucky block auto collect state
-state.autoCollectBlockEnabled = false
-state.autoCollectBlockTask = nil
-state.LuckyBlockTargets = {}   -- set table
-state.pendingRestartCollectRarity = false
-state.selectedRarities = {}
-state.pendingRestartCollectBlock = false
-state.brainrotCache = {}
-state.BRAINROT_PRIORITY_ORDER = {
-    "Infinity","Divine","Celestial","Secret","Cosmic","Mythical","Legendary","Epic","Rare","Uncommon","Common"
-}
-state.RARITIES = {
-    "Infinity","Divine","Celestial","Secret","Cosmic","Mythical","Legendary","Epic","Rare","Uncommon","Common"
-}
-
-state.DEBUG_LUCKY = false
-state.LUCKY_RETRY_DELAY = 0.6     -- detik antar attempt
-state.LUCKY_MAX_ATTEMPTS = 6      -- retry sebelum reset
-
--- Lucky block watcher
-state.LuckyBlockQueue = {}
-state.LuckyBlockSeen = {}
-state.luckyWatcherConnAdded = nil
-state.luckyWatcherConnRemoved = nil
-state.workspaceChildAddedConn = nil
-state.promptOriginalHold_PB = {}
-state.LUCKY_PRIORITY_ORDER = {
-    "Admin","Divine","Celestial","Gamer","Radioactive","Void","UFO","Alien","Jackpot","Money",
-    "Secret","Cosmic","Mythical","Legendary","Epic","Rare","Uncommon","Common"
-}
-state.RemoteEventsFolder = nil
-
-state.LUCKY_PRIORITY_MAP = {}
-for i, name in ipairs(state.LUCKY_PRIORITY_ORDER) do
-    state.LUCKY_PRIORITY_MAP[name] = i
-end
-
--- floors data
-state.Floors = {
-    {name="Start",      x=119.389}, -- index 1
-    {name="Common",     x=242},
-    {name="Uncommon",   x=341},
-    {name="Rare",       x=470},
-    {name="Epic",       x=649},
-    {name="Legendary",  x=913},
-    {name="Mythical",   x=1310},
-    {name="Cosmic",     x=1900},
-    {name="Secret",     x=2430},
-    {name="Celestial",  x=2785},
-}
-
--- tween / respawn
-state.lastTween = nil
-state.pendingRestartMove = false
-state.pendingRestartCollect = false
-state.humanoidDiedConn = nil
-
-state.scannerEnabled = false
-state.scannerTask = nil
-
-state.platformBooting = false
-state.hardResetOnRespawn = false
-
--- platform builder internal parts
-state.platformParts = {}
-state.wallParts = {}
-
-state.OpenBlockState = { chosenTypes = {} }
-state.AutoCollectArcade = false
-
-state.coinCache = {
-    ["Radioactive Coin"] = {},
-    ["UFO Coin"] = {},
-    ["GoldBar"] = {},
-    ["Ticket"] = {},
-    ["Game Console"] = {},
-    -- Valentine / Event
-    ["HeartCandy1"] = {},
-    ["HeartCandy2"] = {},
-    ["HeartCandy3"] = {},
-    ["lovetoken"] = {}
-}
-state.cachePointers = {
-    ["Radioactive Coin"] = 1,
-    ["UFO Coin"] = 1,
-    ["GoldBar"] = 1,
-    ["Ticket"] = 1,
-    ["Game Console"] = 1,
-    -- Valentine pointers
-    ["HeartCandy1"] = 1,
-    ["HeartCandy2"] = 1,
-    ["HeartCandy3"] = 1,
-    ["lovetoken"] = 1
-}
-
--- Collect Coins (new unified dropdown)
-state.CollectCoins = state.CollectCoins or {
-    ["Radioactive Coin"] = false,
-    ["UFO Coin"] = false,
-    ["Gold Bar"] = false,
-    ["Arcade"] = false,
-    ["Valentine"] = false
-}
-state.ActivateCollectCoin = state.ActivateCollectCoin or false
-
--- obby gold
-state.AutoObbyGoldEnabled = false
-state.obbyGoldTask = nil
-state.OBBY_TARGETS = {
-    "MoneyObby1End",
-    "MoneyObby2End",
-    "MoneyObby3End"
-}
-state.obbyPartCache = {}
-state.isRunningObbySequence = false
-state.obbyCurrentStep = 0
-
-state.OBBY_PAIRS = {
-    {start = "MoneyObbyStart1", finish = "MoneyObby1End"},
-    {start = "MoneyObbyStart2", finish = "MoneyObby2End"},
-    {start = "MoneyObbyStart3", finish = "MoneyObby3End"}
-}
-
-state.AutoCollectTarget = false
-state.autoCollectTargetTask = nil
-state.vipWallListenerConn = nil
-
--- Auto Trade / Auto Gift state (diperlukan untuk fitur dari script2)
-state.TargetPlayer = nil
-state.BrainrotSet = {}         -- map rarity -> true (selections for giving/trading)
-state.LuckySet = {}           -- map rarity -> true (selections for lucky blocks)
-
-state.AutoGift = false
-state.AutoGiftTask = nil
-
-state.AutoTrade = false
-state.AutoTradeTask = nil
-
--- timing / slot configs (default values sesuai script2)
-state.MAX_SLOTS = 6
-state.SEND_TRADE_WAIT = 5.0   -- waktu tunggu setelah SendTrade sebelum mulai fill slots
-state.POST_FILL_WAIT = 4.0    -- waktu tunggu setelah fill slots sebelum tekan Accept
-state.POST_ACCEPT_WAIT = 5.0  -- waktu tunggu setelah tekan Accept sebelum loop berikutnya
-state.LOOP_DELAY = 2.0        -- delay tambahan di loop (tetap ada)
-
--- remotes placeholders (akan di-init di Block B)
-state.SendGiftRF = nil
-state.SendTradeRF = nil
-state.SetSlotOfferRF = nil
-state.ReadyTradeRE = nil
-state.AutoTravelEnabled = false
-state.autoTravelTask = nil
-state.pendingRestartTravel = false
-
-state._autoTravelPaused = false
-state._autoTravelPausedByCollector = false
 ------------------------------------------------------
 -- HELPERS (functions kecil)
 ------------------------------------------------------
@@ -1736,6 +1736,112 @@ local function buildLookups()
 end
 
 buildLookups() -- ← BUILD IMMEDIATELY
+
+-- PATCH C: Helpers & Methode V2 (paste ke helpers/core section, sebelum Window UI)
+local function safeTweenToHRPCFrame(hrp, goalCFrame, tweenInfo)
+    if not hrp or not hrp.Parent then return false end
+    local ok, tween = pcall(function()
+        return TweenService:Create(hrp, tweenInfo, {CFrame = goalCFrame})
+    end)
+    if not ok or not tween then return false end
+    local completed = false
+    local conn
+    conn = tween.Completed:Connect(function()
+        completed = true
+        if conn then conn:Disconnect() end
+    end)
+    tween:Play()
+    -- fallback timeout (safety)
+    local timeout = (tweenInfo and tweenInfo.Time or 0) + 2.0
+    local start = tick()
+    while not completed and tick() - start < timeout do
+        RunService.Heartbeat:Wait()
+    end
+    if conn then pcall(function() conn:Disconnect() end) end
+    return completed
+end
+
+-- Placeholder: gantikan ini dengan fungsi / remote collect yang kamu pakai (nama remote atau function)
+local function doCollect(targetPart)
+    -- GANTI: contoh, jika kamu punya remote Collect: game.ReplicatedStorage.Remotes.Collect:FireServer(targetPart)
+    -- atau jika ada function collectTarget(targetPart) -> panggil di sini
+    -- saat ini hanya log (placeholder)
+    pcall(function()
+        warn("[collectWithV2] placeholder doCollect() called for", targetPart and targetPart.Name or "nil")
+    end)
+end
+
+-- Collect routine (Methode V2)
+-- Alur: Start ground -> naik ke liftY -> move horizontally above target -> turun ke target -> collect -> naik -> kembali start -> turun
+local function collectWithV2(targetPart, opts)
+    opts = opts or {}
+    if not targetPart or not targetPart.Parent then return false end
+    local char = LocalPlayer.Character
+    if not char then return false end
+    local hrp = char:FindFirstChild("HumanoidRootPart") or getRoot()
+    if not hrp then return false end
+
+    -- Start position (gunakan state.START_POS jika ada, fallback ke provided constant)
+    local startPosVec = state.START_POS or Vector3.new(85.193000, 68.104000, 51.115000)
+    local startCFrame = CFrame.new(startPosVec)
+
+    -- target pos (ambil current posisi target)
+    local targetPos = (targetPart and targetPart.Position) and targetPart.Position or (opts.targetPos or nil)
+    if not targetPos then return false end
+
+    -- Lift / height calculation: gunakan Y target + extra (sesuai request "ambil kordinat tinggi nya saja")
+    local LIFT_EXTRA = (opts.LIFT_EXTRA ~= nil) and opts.LIFT_EXTRA or 30  -- default extra (tweak)
+    local MIN_LIFT_ABOVE_START = (opts.MIN_LIFT_ABOVE_START ~= nil) and opts.MIN_LIFT_ABOVE_START or 20
+    local liftY = targetPos.Y + (opts.liftExtra or LIFT_EXTRA)
+    liftY = math.max(liftY, startPosVec.Y + (opts.minLiftAboveStart or MIN_LIFT_ABOVE_START))
+
+    -- Tween settings (sesuaikan gaya project)
+    local TWEEN_TIME_HORIZONTAL = (opts.TWEEN_TIME_HORIZONTAL or 0.45)
+    local TWEEN_TIME_VERTICAL = (opts.TWEEN_TIME_VERTICAL or 0.35)
+    local tInfoH = TweenInfo.new(TWEEN_TIME_HORIZONTAL, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tInfoV = TweenInfo.new(TWEEN_TIME_VERTICAL, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+    -- STEP 1: Pastikan kembali ke Start ground (snap to start)
+    pcall(function()
+        safeTweenToHRPCFrame(hrp, startCFrame, tInfoV)
+    end)
+
+    -- STEP 2: Naik vertikal di atas Start (startX, liftY, startZ)
+    local aboveStart = CFrame.new(startPosVec.X, liftY, startPosVec.Z)
+    pcall(function() safeTweenToHRPCFrame(hrp, aboveStart, tInfoV) end)
+
+    -- STEP 3: Horizontal ke atas target (targetX, liftY, targetZ)
+    local aboveTarget = CFrame.new(targetPos.X, liftY, targetPos.Z)
+    pcall(function() safeTweenToHRPCFrame(hrp, aboveTarget, tInfoH) end)
+
+    -- Jika target hilang saat bergerak -> abort & kembali start
+    if not targetPart or not targetPart.Parent then
+        pcall(function() safeTweenToHRPCFrame(hrp, aboveStart, tInfoH) end)
+        pcall(function() safeTweenToHRPCFrame(hrp, startCFrame, tInfoV) end)
+        return false
+    end
+
+    -- STEP 4: Turun ke target (targetX, targetY, targetZ)
+    local toTarget = CFrame.new(targetPos.X, targetPos.Y, targetPos.Z)
+    pcall(function() safeTweenToHRPCFrame(hrp, toTarget, tInfoV) end)
+
+    -- STEP 5: Collect (ganti doCollect dengan call ke remote / fungsi asli)
+    task.wait(0.06)
+    pcall(function() doCollect(targetPart) end)
+    task.wait(0.12)
+
+    -- STEP 6: Naik lagi ke aboveTarget
+    pcall(function() safeTweenToHRPCFrame(hrp, aboveTarget, tInfoV) end)
+
+    -- STEP 7: Kembali ke aboveStart
+    pcall(function() safeTweenToHRPCFrame(hrp, aboveStart, tInfoH) end)
+
+    -- STEP 8: Turun ke start ground
+    pcall(function() safeTweenToHRPCFrame(hrp, startCFrame, tInfoV) end)
+
+    return true
+end
+
 
 ------------------------------------------------------
 -- AUTO TRADE SECION CORE FUNCTIONS
@@ -3159,40 +3265,141 @@ local function startAutoCollectBrainrotByRarity()
             local targetBrainrots = {}
             for rarity, isSelected in pairs(state.selectedRarities) do
                 if isSelected and state.brainrotCache[rarity] then
-                    for _, brainrotData in ipairs(state.brainrotCache[rarity]) do table.insert(targetBrainrots, brainrotData) end
+                    for _, brainrotData in ipairs(state.brainrotCache[rarity]) do
+                        table.insert(targetBrainrots, brainrotData)
+                    end
                 end
             end
+
             targetBrainrots = sortBrainrotsByPriority(targetBrainrots)
-            if #targetBrainrots == 0 then task.wait(0.5); continue end
+            if #targetBrainrots == 0 then
+                task.wait(0.5)
+                continue
+            end
+
             local collected = 0
+
             for _, brainrotData in ipairs(targetBrainrots) do
                 if collected >= state.BRAINROT_PICK_COUNT then break end
                 if not state.autoCollectEnabled then break end
                 if not brainrotData.model or not brainrotData.model.Parent then continue end
+
                 local hum = getHumanoid()
                 if hum and hum.Health <= 0 then break end
-                local safePos = Vector3.new(brainrotData.position.X, state.START_POS.Y + state.PLATFORM_Y_OFFSET, state.START_POS.Z - state.PLATFORM_WIDTH_Z/2 - state.WALL_THICKNESS/2 + state.WALL_IN_OUT_OFFSET - state.WALL_SAFE_DISTANCE)
-                tweenToFloor(state.Floors[1], true); task.wait(0.1)
-                moveHRPToPosition(safePos, state.AUTO_MOVE_SPEED_MULT); task.wait(0.08)
-                local brainrotPos = Vector3.new(brainrotData.position.X, 0, brainrotData.position.Z)
-                moveHRPToPosition(brainrotPos, state.AUTO_MOVE_SPEED_MULT); task.wait(0.08)
-                for _, prompt in ipairs(brainrotData.model:GetDescendants()) do
-                    if prompt:IsA("ProximityPrompt") then
-                        applyInstantGrab(prompt)
-                        firePromptSafe(prompt)
-                        task.wait(0.03)
+
+                ------------------------------------------------------
+                -- 🔥 COLLECT METHOD SWITCH
+                ------------------------------------------------------
+                if state.CollectMethod == "V2" then
+
+                    local hrp = getRoot()
+                    if not hrp then continue end
+
+                    local startPos = state.START_POS
+                    local targetPos = brainrotData.position
+
+                    -- STEP 1: kembali ke start exact
+                    hrp.CFrame = CFrame.new(startPos)
+                    task.wait(0.05)
+
+                    -- STEP 2: naik (pakai Y target sebagai tinggi)
+                    local liftY = targetPos.Y
+                    moveHRPToPosition(
+                        Vector3.new(startPos.X, liftY, startPos.Z),
+                        state.AUTO_MOVE_SPEED_MULT
+                    )
+                    task.wait(0.08)
+
+                    -- STEP 3: horizontal ke atas target
+                    moveHRPToPosition(
+                        Vector3.new(targetPos.X, liftY, targetPos.Z),
+                        state.AUTO_MOVE_SPEED_MULT
+                    )
+                    task.wait(0.08)
+
+                    -- STEP 4: turun ke target
+                    moveHRPToPosition(
+                        Vector3.new(targetPos.X, targetPos.Y, targetPos.Z),
+                        state.AUTO_MOVE_SPEED_MULT
+                    )
+                    task.wait(0.08)
+
+                    -- GRAB
+                    for _, prompt in ipairs(brainrotData.model:GetDescendants()) do
+                        if prompt:IsA("ProximityPrompt") then
+                            applyInstantGrab(prompt)
+                            firePromptSafe(prompt)
+                            task.wait(0.03)
+                        end
                     end
+
+                    -- STEP 5: naik lagi
+                    moveHRPToPosition(
+                        Vector3.new(targetPos.X, liftY, targetPos.Z),
+                        state.AUTO_MOVE_SPEED_MULT
+                    )
+                    task.wait(0.08)
+
+                    -- STEP 6: balik ke start atas
+                    moveHRPToPosition(
+                        Vector3.new(startPos.X, liftY, startPos.Z),
+                        state.AUTO_MOVE_SPEED_MULT
+                    )
+                    task.wait(0.08)
+
+                    -- STEP 7: turun ke start
+                    moveHRPToPosition(startPos, state.AUTO_MOVE_SPEED_MULT)
+                    task.wait(0.1)
+
+                else
+                    ------------------------------------------------------
+                    -- METHODE V1 (SAFE AREA ORIGINAL)
+                    ------------------------------------------------------
+
+                    local safePos = Vector3.new(
+                        brainrotData.position.X,
+                        state.START_POS.Y + state.PLATFORM_Y_OFFSET,
+                        state.START_POS.Z
+                        - state.PLATFORM_WIDTH_Z/2
+                        - state.WALL_THICKNESS/2
+                        + state.WALL_IN_OUT_OFFSET
+                        - state.WALL_SAFE_DISTANCE
+                    )
+
+                    tweenToFloor(state.Floors[1], true); task.wait(0.1)
+                    moveHRPToPosition(safePos, state.AUTO_MOVE_SPEED_MULT); task.wait(0.08)
+
+                    local brainrotPos = Vector3.new(
+                        brainrotData.position.X,
+                        0,
+                        brainrotData.position.Z
+                    )
+
+                    moveHRPToPosition(brainrotPos, state.AUTO_MOVE_SPEED_MULT); task.wait(0.08)
+
+                    for _, prompt in ipairs(brainrotData.model:GetDescendants()) do
+                        if prompt:IsA("ProximityPrompt") then
+                            applyInstantGrab(prompt)
+                            firePromptSafe(prompt)
+                            task.wait(0.03)
+                        end
+                    end
+
+                    moveHRPToPosition(safePos, state.AUTO_MOVE_SPEED_MULT); task.wait(0.08)
+                    tweenToFloor(state.Floors[1], true); task.wait(0.15)
                 end
-                moveHRPToPosition(safePos, state.AUTO_MOVE_SPEED_MULT); task.wait(0.08)
+
                 collected = collected + 1
-                tweenToFloor(state.Floors[1], true); task.wait(0.15)
             end
+
             task.wait(0.5)
         end
+
         state.autoCollectTask = nil
         restorePrompts()
     end)
 end
+
 
 -- stop all auto collect (replacement)
 local function stopAllAutoCollect()
@@ -4527,6 +4734,26 @@ RunTab:Section({ Title = "Auto Collect Brainrot / Block" })
 -- =============================================
 -- 2. DROPDOWN TARGET BRAINROT
 -- =============================================
+-- PATCH D: Collect Methode dropdown (taruh tepat di atas Target Brainrot dropdown)
+RunTab:Dropdown({
+    Title = "Collect Methode",
+    Values = {"V1", "V2"},
+    Multi = false,
+    Value = state.CollectMethod or "V2",
+    Callback = function(val)
+        state.CollectMethod = val
+        state.WindUI:Notify({
+            Title = "Collect Methode",
+            Content = "Selected: "..val,
+            Duration = 2
+        })
+    end
+})
+
+-- simpan reference supaya sync/restore bisa dilakukan via trySyncKey
+state.UI_ELEMENTS = state.UI_ELEMENTS or {}
+state.UI_ELEMENTS["CollectMethod"] = collectMethodDropdown
+
 RunTab:Dropdown({
     Title = "Target Brainrot",
     Values = state.BRAINROT_PRIORITY_ORDER,
