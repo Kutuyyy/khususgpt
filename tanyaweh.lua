@@ -3295,11 +3295,21 @@ local function startAutoCollectBrainrotByRarity()
                     local hrp = getRoot()
                     if not hrp then continue end
 
-                    local startPos = state.START_POS
+                    local startPos = state.START_POS or Vector3.new(85.193000, 68.104000, 51.115000)
+                    if typeof(startPos) ~= "Vector3" then
+                        warn("[V2] START_POS invalid")
+                        continue
+                    end
                     local targetPos = brainrotData.position
 
+                    print("START_POS =", state.START_POS)
                     -- STEP 1: kembali ke start exact
-                    hrp.CFrame = CFrame.new(startPos)
+                    if typeof(startPos) == "Vector3" then
+                        hrp.CFrame = CFrame.new(startPos)
+                    else
+                        warn("[V2] Invalid START_POS:", startPos)
+                        continue
+                    end
                     task.wait(0.05)
 
                     -- STEP 2: naik (pakai Y target sebagai tinggi)
