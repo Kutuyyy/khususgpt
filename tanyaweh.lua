@@ -40,6 +40,50 @@ end
 ------------------------------------------------------
 local state = {}
 
+------------------------------------------------------
+-- LOAD WINDUI
+------------------------------------------------------
+local ok, WindUI = pcall(function()
+    return loadstring(game:HttpGet(
+        "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
+    ))()
+end)
+if not ok or type(WindUI) ~= "table" then return end
+state.WindUI = WindUI
+
+-- UI ELEMENT REFERENCES (untuk sinkronisasi setelah load)
+state.UI_ELEMENTS = {}
+
+local function safeSetUIElement(el, value)
+    if not el then return end
+    pcall(function()
+        if el.SetValue then el:SetValue(value) return end
+        if el.Set then el:Set(value) return end
+        if el.SetEnabled then el:SetEnabled(value) return end
+        if el.SetState then el:SetState(value) return end
+        -- fallback: try direct property (rare)
+        if el.Value ~= nil then el.Value = value end
+    end)
+end
+
+-- wrapper untuk membuat Toggle dan menyimpan reference
+local function createToggle(tab, params, key)
+    local el = tab:Toggle(params)
+    if key and el then state.UI_ELEMENTS[key] = el end
+    return el
+end
+------------------------------------------------------
+-- SERVICES (local karena sering dipakai)
+------------------------------------------------------
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+local LocalPlayer = Players.LocalPlayer
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService") -- needed for platform builder tweens
+local HttpService = game:GetService("HttpService")
+local userId = tostring(Players.LocalPlayer.UserId)
 
 ------------------------------------------------------
 -- REMOTES
@@ -277,51 +321,6 @@ state._autoTravelPaused = false
 state._autoTravelPausedByCollector = false
 state.CollectMethod = state.CollectMethod or "V2" -- "V1" = old safe-area method, "V2" = new per-target path (your new method)
 
-
-------------------------------------------------------
--- LOAD WINDUI
-------------------------------------------------------
-local ok, WindUI = pcall(function()
-    return loadstring(game:HttpGet(
-        "https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"
-    ))()
-end)
-if not ok or type(WindUI) ~= "table" then return end
-state.WindUI = WindUI
-
--- UI ELEMENT REFERENCES (untuk sinkronisasi setelah load)
-state.UI_ELEMENTS = {}
-
-local function safeSetUIElement(el, value)
-    if not el then return end
-    pcall(function()
-        if el.SetValue then el:SetValue(value) return end
-        if el.Set then el:Set(value) return end
-        if el.SetEnabled then el:SetEnabled(value) return end
-        if el.SetState then el:SetState(value) return end
-        -- fallback: try direct property (rare)
-        if el.Value ~= nil then el.Value = value end
-    end)
-end
-
--- wrapper untuk membuat Toggle dan menyimpan reference
-local function createToggle(tab, params, key)
-    local el = tab:Toggle(params)
-    if key and el then state.UI_ELEMENTS[key] = el end
-    return el
-end
-------------------------------------------------------
--- SERVICES (local karena sering dipakai)
-------------------------------------------------------
-local Players = game:GetService("Players")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Workspace = game:GetService("Workspace")
-local UserInputService = game:GetService("UserInputService")
-local LocalPlayer = Players.LocalPlayer
-local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService") -- needed for platform builder tweens
-local HttpService = game:GetService("HttpService")
-local userId = tostring(Players.LocalPlayer.UserId)
 
 -- =============================================
 -- MAP DETECTOR + FLOORS REFRESH + VALENTINES LISTENER
